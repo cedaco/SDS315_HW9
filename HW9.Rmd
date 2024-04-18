@@ -1,0 +1,124 @@
+---
+title: "HW9"
+author: "Cesar Dao (cad4837)"
+date: "2024-04-18"
+output: pdf_document
+---
+[Repository Link](https://github.com/cedaco/SDS315_HW9)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(mosaic)
+library(tidyverse)
+library(knitr)
+library(MatchIt)
+```
+
+```{r, include = FALSE, echo = FALSE}
+setwd("/Users/cesar/Desktop/SDS315")
+turnout = read.csv("turnout.csv")
+solder = read.csv("solder.csv")
+
+```
+# Part 1
+
+## A
+```{r, echo = FALSE}
+
+mean(turnout$voted1998 == 1 & turnout$GOTV_call == 1)
+
+mean(turnout$voted1998 == 1 & turnout$GOTV_call == 0)
+
+diff_mean = do(10000) * diffmean(voted1998 == 1 ~ GOTV_call, data = mosaic::resample(turnout))
+
+confint(diff_mean, level = 0.95)
+
+
+```
+
+## B
+```{r, echo = FALSE}
+ggplot(turnout) + geom_boxplot(aes(x = factor(GOTV_call), y = AGE)) 
+ggplot(turnout) + geom_boxplot(aes(x = factor(voted1998), y = AGE)) 
+ggplot(turnout) + geom_boxplot(aes(x = factor(voted1996), y = AGE)) 
+
+```
+Older people appear to have been more common targets for GOTV calls and appear to be more likely to have voted in the 1998 and 1996 elections.
+
+```{r, echo = FALSE}
+print("GOTV_call vs Major party affiliation ")
+mean(MAJORPTY ~ GOTV_call, data=turnout)
+
+print("If the person voted in 1998 vs Major party affiliation")
+mean(MAJORPTY ~ voted1998, data=turnout)
+
+print("If the person voted in 1996 vs  Major party affiliation")
+mean(MAJORPTY ~ voted1996, data=turnout) 
+
+```
+These statistics show that those who are affiliated with a major party had slightly higher proportions of being subjects of GOTV_call, voting in 1998, and voting in 1996
+
+## C
+```{r, echo = FALSE}
+match = matchit(GOTV_call ~ AGE + MAJORPTY + voted1996, data = turnout, ratio=5)
+summary(match)
+match = match.data(match)
+
+
+```
+
+```{r, echo = FALSE}
+print("If the person received a GOTV_call vs if they voted or not in 1998")
+prop(voted1998 ~ GOTV_call, data=match)
+```
+
+This new matched data appears to show that those that got a GOTV call had a higher proportion of people that voted than those who didnt get a GOTV call.
+
+```{r}
+diffmean_match= do(10000)*diffmean(voted1998 ~ GOTV_call, data=mosaic::resample(match))
+confint(diffmean_match, level = 0.95)
+lm_match = do(10000)*lm(voted1998 ~ GOTV_call, data=mosaic::resample(match))
+confint(lm_match, level = 0.95)
+
+```
+I conclude that the GOTV call did not have a much of a relationship with whether someone voted or not since the estimate for the r squared statistic falls inside of its 95% confidence interval.
+
+# Part 2
+
+## A
+```{r, echo = FALSE}
+ggplot(solder) + geom_boxplot(aes(x = Opening, y = skips))
+```
+This plot shows that large openings appear to lead to the least amount of skips and that small openings seem to lead to a larger amount of skips. Medium openings appear to result in more skips than large openings but much less skips than small openings.
+
+```{r, echo = FALSE}
+ggplot(solder) + geom_boxplot(aes(x = Solder, y = skips))
+
+```
+This plot shows that thicker alloys seem to result in less skips and that thiner alloys seem to result in a larger amount of skips.
+
+## B
+
+```{r, echo = FALSE}
+model = lm(skips ~ Opening, data = solder) 
+confint(model, level = 0.95) %>% round(0)
+
+model = lm(skips ~ Solder, data = solder) 
+confint(model, level = 0.95) %>% round(0)
+
+model = lm(skips ~ Opening:Solder, data = solder) 
+confint(model, level = 0.95) %>% round(0)
+
+```
+## C
+
+The differences in the estimates at 2.5% and 97.% for the 95% confidence interval appear to be practically significant for all the different variables being analyzed, as a even one skip could result in the failure of a circuit board. Some intervals contain negative numbers, which means that the given variable results in very miniscule amounts of skips/failure.
+
+## D
+
+Judging by the graphs and the intervals, I would recommend that the best combination of Opening size and alloy thickness would be a large sized opening and a thick alloy. These both appear to cause the least amount of skips and both together have the most negative confidence interval at 95% confidence.
+
+
+
+
